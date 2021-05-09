@@ -10,9 +10,9 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets, QtTest
 from game_setup import Game
-#from mplwidget import *
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
+import random
 
 class Ui_FuckdeDealer(object):
     def __init__(self):
@@ -37,19 +37,26 @@ class Ui_FuckdeDealer(object):
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.button_Start = QtWidgets.QPushButton(self.centralwidget, clicked = lambda : self.pressed_it('Start'))
-        self.button_Start.setGeometry(750, 490, 191, 51)
+        self.button_Start.setGeometry(750, 490, 191, 41)
         font = QtGui.QFont()
         font.setFamily("Franklin Gothic Medium")
         font.setPointSize(10)
         self.button_Start.setFont(font)
         self.button_Start.setObjectName("button_Start")
         self.button_Exit = QtWidgets.QPushButton(self.centralwidget, clicked = lambda : self.pressed_it('Exit'))
-        self.button_Exit.setGeometry(750, 10, 191, 51)
+        self.button_Exit.setGeometry(750, 20, 191, 41)
         font = QtGui.QFont()
         font.setFamily("Franklin Gothic Medium")
         font.setPointSize(10)
         self.button_Exit.setFont(font)
         self.button_Exit.setObjectName("button_Exit")
+        self.button_Auto = QtWidgets.QPushButton(self.centralwidget, clicked = lambda : self.pressed_it('Auto'))
+        self.button_Auto.setGeometry(670, 40, 71, 20)
+        font = QtGui.QFont()
+        font.setFamily("Franklin Gothic Medium")
+        font.setPointSize(10)
+        self.button_Auto.setFont(font)
+        self.button_Auto.setObjectName("button_Auto")
         self.button_A = QtWidgets.QPushButton(self.horizontalLayoutWidget, clicked = lambda : self.pressed_it('Ace'))
         font = QtGui.QFont()
         font.setFamily("Franklin Gothic Medium")
@@ -535,10 +542,10 @@ class Ui_FuckdeDealer(object):
         self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/green_back.png"))
         self.pulled_card.setObjectName("pulled_card")
         self.plaats_voor_grafiek = QtWidgets.QGroupBox(self.centralwidget)
-        self.plaats_voor_grafiek.setGeometry(QtCore.QRect(19, 469, 711, 231))
+        self.plaats_voor_grafiek.setGeometry(QtCore.QRect(19, 489, 711, 231))
         self.plaats_voor_grafiek.setObjectName("plaats_voor_grafiek")
         self.message_box = QtWidgets.QTextBrowser(self.centralwidget)
-        self.message_box.setGeometry(QtCore.QRect(750, 550, 191, 151))
+        self.message_box.setGeometry(QtCore.QRect(750, 540, 191, 191))
         self.message_box.setObjectName("message_box")
         self.verticalGroupBox = QtWidgets.QGroupBox(self.centralwidget)
         self.verticalGroupBox.setGeometry(QtCore.QRect(750, 380, 191, 101))
@@ -634,11 +641,11 @@ class Ui_FuckdeDealer(object):
 
         # Graphing settings
         self.graphWidget = pg.PlotWidget(self.centralwidget)
-        self.graphWidget.setGeometry(QtCore.QRect(19, 469, 711, 231))
+        self.graphWidget.setGeometry(QtCore.QRect(19, 489, 711, 231))
         self.graphWidget.setObjectName("graphWidget")
         color = self.graphWidget.palette().color(QtGui.QPalette.Window)  # Get the default window background,
         self.graphWidget.setBackground(color)
-        self.graphWidget.setTitle('Counts of all cards still in deck', size='15pt')
+        self.graphWidget.setTitle('Counts of all cards still in deck', size='15pt', height=2)
         styles = {'color':'r', 'font-size':'14px'}
         self.graphWidget.setLabel('left', 'Pick chance (%)', **styles)
         self.graphWidget.setLabel('right', 'Counts', **styles)
@@ -673,6 +680,7 @@ class Ui_FuckdeDealer(object):
         self.fuckdedealertitle.setText(_translate("FuckdeDealer", "Fuck de dealer (single player)"))
         self.button_Start.setText(_translate("FuckdeDealer", "Start"))
         self.button_Exit.setText(_translate("FuckdeDealer", "Exit"))
+        self.button_Auto.setText(_translate("FuckdeDealer", "Auto"))
         self.button_A.setText(_translate("FuckdeDealer", "A"))
         self.button_2.setText(_translate("FuckdeDealer", "2"))
         self.button_3.setText(_translate("FuckdeDealer", "3"))
@@ -699,7 +707,9 @@ class Ui_FuckdeDealer(object):
     # defines actions when buttons are pressed
     def pressed_it(self, name):
         if name == 'Start':
-            self.start_game()
+            self.start_game(auto=False, pausetime=2500)
+        elif name == 'Auto':
+            self.start_game(auto=True, pausetime=50)
         elif name == 'Exit':
             sys.exit()
         elif name == 'tracking':
@@ -732,9 +742,9 @@ class Ui_FuckdeDealer(object):
         widgets = (self.horizontalLayout.itemAt(i).widget() for i in range(self.horizontalLayout.count()))
         if self.enable_hints.isChecked() == True and self.round_bool == False:
             for widget in widgets:
-                if ((rank2int(self.picked.rank) > rank2int(self.first_guess)) and (rank2int(widget.text()) < rank2int(self.first_guess))) or rank2int(widget.text()) == rank2int(self.first_guess):
+                if ((self.picked.numrank > rank2int(self.first_guess)) and (rank2int(widget.text()) < rank2int(self.first_guess))) or rank2int(widget.text()) == rank2int(self.first_guess):
                     widget.setEnabled(False)
-                elif (rank2int(self.picked.rank) < rank2int(self.first_guess)) and (rank2int(widget.text()) > rank2int(self.first_guess)) or rank2int(widget.text()) == rank2int(self.first_guess):
+                elif ((self.picked.numrank < rank2int(self.first_guess)) and (rank2int(widget.text()) > rank2int(self.first_guess))) or rank2int(widget.text()) == rank2int(self.first_guess):
                     widget.setEnabled(False)
                 else:
                     widget.setEnabled(True)
@@ -831,34 +841,40 @@ class Ui_FuckdeDealer(object):
 
         return self.last_button
 
-    ### TO DO #####
-
-    # plays an entire round autonomously
-    def autoplay(self):
-        return
-
-    ###############
-
     # starts the game
-    def start_game(self, auto=False, pausetime=3000):
+    def start_game(self, auto=False, pausetime=2500):
         self.game = Game()
         self.enable_tracking.setEnabled(True)
         self.button_Start.setEnabled(False)
-        self.message_box.setText('Welcome to Fuck the Dealer!')
+        self.button_Auto.setEnabled(False)
+        self.message_box.setHtml('<p style="font-size: 14px">Welcome to Fuck the Dealer!</p>')
+
+        # reset the board to all card backs
+        widgets = self.deck_overview.findChildren(QtWidgets.QLabel)
+        for w in widgets:
+            w.setPixmap(QtGui.QPixmap("small_deck/gray_back.png"))
+
         QtTest.QTest.qWait(2000)
 
         for i in range(len(self.game.cards.deck_list)):
+
             # reset pulled card and text in box
             self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/green_back.png"))
-            self.message_box.setText('A random card has been picked from the deck. \nPlease make a guess')
-
+            self.message_box.setHtml('<p style="font-size: 14px">A <b>random</b> card has been picked from the deck.</p>')
+            self.message_box.append('<p style="font-size: 14px">Please make a guess...</p>')
+            
             # first round
             self.round_bool = True
-            self.first_guess = self.requesting_guess()
+
+            if auto == False:
+                self.first_guess = self.requesting_guess()
+            elif auto == True:
+                self.first_guess = self.game.best_firstguess(self.game.cards)[0]
+
             self.picked, result = self.game.first_round(self.first_guess)
-            self.message_box.setText(f'Your pick was {self.first_guess}')
+            self.message_box.setHtml(f'<p style="font-size: 14px">Your pick was <b>{self.first_guess}</b></p>')
             if result == True:
-                self.message_box.append(f'Correct!')
+                self.message_box.append(f'<p style="font-size: 14px"><b>Correct!</b></p>')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(pausetime)
@@ -870,16 +886,24 @@ class Ui_FuckdeDealer(object):
                 self.highlight_1st(self.game.cards)
                 continue
             else:
-                self.message_box.append(f'Incorrect, please go {result}')
+                self.message_box.append(f'<p style="font-size: 14px; color: red"><b>Incorrect!</b></p>')
+                self.message_box.append(f'<p style="font-size: 14px">please choose a <b>{result}</b> card...</p>')
+
                 self.highlight_2nd(self.game.cards, self.first_guess, self.picked)
 
             # second round
             self.round_bool = False
-            self.second_guess = self.requesting_guess()
+
+            if auto == False:
+                self.second_guess = self.requesting_guess()
+            elif auto == True:
+                guesslist = self.game.best_secondguess(self.game.cards, self.first_guess, self.picked)[0]
+                self.second_guess = random.choice(guesslist)
+
             self.picked, result = self.game.second_round(self.second_guess, self.picked)
-            self.message_box.append(f'Your pick was {self.second_guess}')
+            self.message_box.append(f'<p style="font-size: 14px">Your pick was <b>{self.second_guess}</b></p>')
             if result == True:
-                self.message_box.append(f'Correct!')
+                self.message_box.append(f'<p style="font-size: 14px"><b>Correct!</b></p>')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(pausetime)
@@ -891,7 +915,8 @@ class Ui_FuckdeDealer(object):
                 self.highlight_1st(self.game.cards)
                 continue
             else:
-                self.message_box.append(f'Incorrect, the card was {self.picked.rank} of {self.picked.color}')
+                self.message_box.append(f'<p style="font-size: 14px; color: red"><b>Incorrect!</b></p>')
+                self.message_box.append(f'<p style="font-size: 14px">The card was <b>{self.picked.rank} of {self.picked.color}s</b></p>')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(pausetime)
@@ -907,9 +932,12 @@ class Ui_FuckdeDealer(object):
         self.message_box.setText(f'Game is over!\n {winner} won the game')
         self.message_box.append(f'Play again?')
         self.enable_tracking.setEnabled(False)
+        self.enable_tracking.setChecked(False)
+        self.enable_hints.setEnabled(False)
+        self.enable_hints.setChecked(False)
         self.button_Start.setText('Play again')
         self.button_Start.setEnabled(True)
-        self.button_Start.clicked.connect(lambda: self.start_game)
+        self.button_Auto.setEnabled(True)
 
 def rank2int(rank):
     try: 

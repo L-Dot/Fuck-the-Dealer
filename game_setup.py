@@ -51,7 +51,6 @@ class Deck:
 
     # remove a specific card from the deck
     def remove(self, rank, color):
-        print('REMOVE CHECK')
         for i, card in enumerate(self.deck_list):
             if card.rank == rank and card.color == color:
                 self.deck_list.pop(i)
@@ -93,7 +92,7 @@ class Game:
         picked = self.cards.random_pick()
 
         # 1st round
-        if first_guess == picked.rank:
+        if rank2int(first_guess) == picked.numrank:
             
             return picked, True
 
@@ -107,7 +106,7 @@ class Game:
     # Plays the second round of FTD
     def second_round(self, second_guess, picked):
         # 2nd round
-        if second_guess == picked.rank:
+        if rank2int(second_guess) == picked.numrank:
             
             #self.cards.remove(picked.rank, picked.color)
             return picked, True
@@ -127,19 +126,21 @@ class Game:
 
         # getting the weighted median
         wmedian = weighted.median(ranks, count_array)
-        
+
         # getting the best first guess based on minimum difference
         # between medium and mode
         nearest_ranks = np.argsort(np.abs(wmedian - ranks))
         i = 0
-        while True:
-            best_pick = ranks[nearest_ranks][i]
-            best_counts = count_array[nearest_ranks][i]
-            if best_counts != 0:
-                return best_pick, best_counts
-            i += 1
+        
+        if not all(v == 0 for v in count_array):
+            while True:
+                best_pick = ranks[nearest_ranks][i]
+                best_counts = count_array[nearest_ranks][i]
+                if best_counts != 0:
+                    return best_pick, best_counts
+                i += 1
 
-        return best_pick, best_counts
+        return 0, 0
 
     def best_secondguess(self, cards, first_guess, picked):
         """
