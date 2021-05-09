@@ -4,3 +4,4 @@ launch.json
 settings.json
 *.ui
 *.ipynb
+output

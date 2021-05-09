@@ -711,15 +711,33 @@ class Ui_FuckdeDealer(object):
                 self.enable_hints.setChecked(False)
                 self.bar_graph.setOpts(height=0, width=0.8)
         elif name == 'hints':
+            widgets = (self.horizontalLayout.itemAt(i).widget() for i in range(self.horizontalLayout.count())) # list of all buttons
             if self.enable_hints.isChecked() == True:
                 if self.round_bool == True:
                     self.highlight_1st(self.game.cards)
                 elif self.round_bool == False:
-                    self.highlight_2nd(self.game.cards, self.first_guess, self.picked)
+                    self.highlight_2nd(self.game.cards, self.first_guess, self.picked)                    
+                    self.greyout_buttons()
+
             elif self.enable_hints.isChecked() == False:
                 self.highlight_bar.setOpts(height=0, width=0.8)
+                for widget in widgets:
+                    widget.setEnabled(True)
+                    widget.setStyleSheet('QPushButton {color: black}')
         else:
             self.last_button = name
+
+    # greys out all buttons not possible
+    def greyout_buttons(self):
+        widgets = (self.horizontalLayout.itemAt(i).widget() for i in range(self.horizontalLayout.count()))
+        if self.enable_hints.isChecked() == True and self.round_bool == False:
+            for widget in widgets:
+                if ((rank2int(self.picked.rank) > rank2int(self.first_guess)) and (rank2int(widget.text()) < rank2int(self.first_guess))) or rank2int(widget.text()) == rank2int(self.first_guess):
+                    widget.setEnabled(False)
+                elif (rank2int(self.picked.rank) < rank2int(self.first_guess)) and (rank2int(widget.text()) > rank2int(self.first_guess)) or rank2int(widget.text()) == rank2int(self.first_guess):
+                    widget.setEnabled(False)
+                else:
+                    widget.setEnabled(True)
 
     # adds a beer to the counter for either user or computer
     def add_beer(self, who, amount):
@@ -751,6 +769,7 @@ class Ui_FuckdeDealer(object):
             best_pick, best_counts = self.game.best_firstguess(deck)
             best_pick = best_pick - 1
             self.highlight_bar.setOpts(x = [best_pick], height=[best_counts], width=0.8, brush='r')
+            self.highlight_button(int(best_pick))
 
     # highlights the best second picks
     def highlight_2nd(self, deck, first_guess, picked):
@@ -758,14 +777,35 @@ class Ui_FuckdeDealer(object):
             best_picks, best_counts = self.game.best_secondguess(deck, first_guess, self.picked)
             best_picks = best_picks - 1
             self.highlight_bar.setOpts(x = list(best_picks), height=list(best_counts), width=0.8, brush='r')
+            self.highlight_button(best_picks)
+
+    def highlight_button(self, best_picks):
+        widgets = (self.horizontalLayout.itemAt(i).widget() for i in range(self.horizontalLayout.count()))
+        for w in widgets:
+            if self.enable_hints.isChecked() == True:
+                if isinstance(best_picks, int):
+                    if rank2int(w.text()) == best_picks + 1:
+                        w.setStyleSheet('QPushButton {color: red}')
+                    else:
+                        w.setStyleSheet('QPushButton {color: black}')
+                else:
+                    if rank2int(w.text()) in list(best_picks + 1):
+                        w.setStyleSheet('QPushButton {color: red}')
+                    else:
+                        w.setStyleSheet('QPushButton {color: black}')
+
 
     # can be used to moderate user input via an event loop
     def requesting_guess(self):
 
         # Enable all buttons for user input
-        widgets = (self.horizontalLayout.itemAt(i).widget() for i in range(self.horizontalLayout.count())) 
-        for widget in widgets:
-            widget.setEnabled(True)
+        widgets = (self.horizontalLayout.itemAt(i).widget() for i in range(self.horizontalLayout.count()))
+        if self.enable_hints.isChecked() == True and self.round_bool == False:
+            self.greyout_buttons()
+        else:
+            for widget in widgets:
+                widget.setEnabled(True)
+                
 
         # loop until a button is clicked
         loop = QtCore.QEventLoop()
@@ -791,12 +831,16 @@ class Ui_FuckdeDealer(object):
 
         return self.last_button
 
+    ### TO DO #####
+
     # plays an entire round autonomously
     def autoplay(self):
         return
 
+    ###############
+
     # starts the game
-    def start_game(self):
+    def start_game(self, auto=False, pausetime=3000):
         self.game = Game()
         self.enable_tracking.setEnabled(True)
         self.button_Start.setEnabled(False)
@@ -812,13 +856,12 @@ class Ui_FuckdeDealer(object):
             self.round_bool = True
             self.first_guess = self.requesting_guess()
             self.picked, result = self.game.first_round(self.first_guess)
-            print(self.picked.filename)
             self.message_box.setText(f'Your pick was {self.first_guess}')
             if result == True:
                 self.message_box.append(f'Correct!')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
-                QtTest.QTest.qWait(3000)
+                QtTest.QTest.qWait(pausetime)
                 self.game.cards.remove(self.picked.rank, self.picked.color)
 
                 self.add_beer('Computer', 2)
@@ -839,7 +882,7 @@ class Ui_FuckdeDealer(object):
                 self.message_box.append(f'Correct!')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
-                QtTest.QTest.qWait(3000)
+                QtTest.QTest.qWait(pausetime)
                 self.game.cards.remove(self.picked.rank, self.picked.color)
 
                 self.add_beer('Computer', 1)
@@ -851,7 +894,7 @@ class Ui_FuckdeDealer(object):
                 self.message_box.append(f'Incorrect, the card was {self.picked.rank} of {self.picked.color}')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
-                QtTest.QTest.qWait(3000)
+                QtTest.QTest.qWait(pausetime)
                 self.game.cards.remove(self.picked.rank, self.picked.color)
 
                 self.add_beer('User', 1)
@@ -868,6 +911,14 @@ class Ui_FuckdeDealer(object):
         self.button_Start.setEnabled(True)
         self.button_Start.clicked.connect(lambda: self.start_game)
 
+def rank2int(rank):
+    try: 
+        converter = {'Ace': 1, 'A' : 1, 'Jack' : 11,'J' : 11, 'Queen' : 12, 'Q' : 12, 'King' : 13, 'K' :13}
+        return converter[rank]
+    except:
+        return int(rank)
+
+
 if __name__ == "__main__":
     import sys
     import threading
@@ -877,9 +928,6 @@ if __name__ == "__main__":
     ui = Ui_FuckdeDealer()
     ui.setupUi(FuckdeDealer)
     FuckdeDealer.show()
-
-    #ui.start_game()
-
     sys.exit(app.exec_())
 
 
