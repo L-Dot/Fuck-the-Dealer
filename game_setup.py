@@ -1,4 +1,6 @@
 import random
+import numpy as np
+import weighted
 
 # simple function to rewrite some of the rank values
 def rank2int(rank):
@@ -84,7 +86,6 @@ class Game:
     in the game or plot the game state
     """
     def __init__(self):
-        print('init')
         self.cards = Deck()
 
     # Plays the first round of FTD
@@ -94,7 +95,6 @@ class Game:
         # 1st round
         if first_guess == picked.rank:
             
-            self.cards.remove(picked.rank, picked.color)
             return picked, True
 
         else:
@@ -109,15 +109,61 @@ class Game:
         # 2nd round
         if second_guess == picked.rank:
             
-            self.cards.remove(picked.rank, picked.color)
+            #self.cards.remove(picked.rank, picked.color)
             return picked, True
 
         else:
-            self.cards.remove(picked.rank, picked.color)
+            #self.cards.remove(picked.rank, picked.color)
             return picked, False
+    
+
+    def best_firstguess(self, cards):
+        """
+        Calculates the best guesses from the current
+        card state
+        """
+        ranks = np.arange(1, 14)
+        count_array = np.array(list(cards.counts().values()))
+
+        # getting the weighted median
+        wmedian = weighted.median(ranks, count_array)
         
-    def plot_counts(self):
+        # getting the best first guess based on minimum difference
+        # between medium and mode
+        nearest_ranks = np.argsort(np.abs(wmedian - ranks))
+        i = 0
+        while True:
+            best_pick = ranks[nearest_ranks][i]
+            best_counts = count_array[nearest_ranks][i]
+            if best_counts != 0:
+                return best_pick, best_counts
+            i += 1
+
+        return best_pick, best_counts
+
+    def best_secondguess(self, cards, first_guess, picked):
         """
-        Makes a barplot of the number of counts of each rank
+        The best second guess are all the modes that 
+        are in the leftover part of the board
         """
-        return
+        ranks = np.arange(1, 14)
+        count_array = np.array(list(cards.counts().values()))
+        
+        # creating leftover arrays
+        if rank2int(first_guess) > rank2int(picked.rank):
+            leftover_ranks = ranks[ranks < rank2int(first_guess)]
+            leftover_counts = count_array[leftover_ranks - 1]
+        elif rank2int(first_guess) < rank2int(picked.rank):
+            leftover_ranks = ranks[ranks > rank2int(first_guess)]
+            leftover_counts = count_array[leftover_ranks - 1]
+        
+        # getting the ranks with the highest count in leftover array
+        N = np.count_nonzero(leftover_counts == np.max(leftover_counts))
+        idx = np.argpartition(leftover_counts, -N)[-N:]
+        mode_indices = idx[np.argsort((-leftover_counts)[idx])]
+        
+        # calculating the best picks and best counts
+        best_picks = leftover_ranks[mode_indices]
+        best_counts = leftover_counts[mode_indices]
+        
+        return best_picks, best_counts

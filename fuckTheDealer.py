@@ -16,8 +16,7 @@ import pyqtgraph as pg
 
 class Ui_FuckdeDealer(object):
     def __init__(self):
-        self.game = Game()
-
+        self.round_bool = True
 
     def setupUi(self, FuckdeDealer):
         FuckdeDealer.setObjectName("FuckdeDealer")
@@ -552,6 +551,7 @@ class Ui_FuckdeDealer(object):
         font.setFamily("Franklin Gothic Medium")
         font.setPointSize(10)
         self.enable_tracking.setFont(font)
+        self.enable_tracking.setEnabled(False)
         self.enable_tracking.setObjectName("enable_tracking")
         self.setting_box.addWidget(self.enable_tracking)
         self.enable_hints = QtWidgets.QCheckBox(self.verticalGroupBox, toggled= lambda : self.pressed_it('hints'))
@@ -712,18 +712,21 @@ class Ui_FuckdeDealer(object):
                 self.bar_graph.setOpts(height=0, width=0.8)
         elif name == 'hints':
             if self.enable_hints.isChecked() == True:
-                self.highlight_plot(self.game.cards)
+                if self.round_bool == True:
+                    self.highlight_1st(self.game.cards)
+                elif self.round_bool == False:
+                    self.highlight_2nd(self.game.cards, self.first_guess, self.picked)
             elif self.enable_hints.isChecked() == False:
                 self.highlight_bar.setOpts(height=0, width=0.8)
         else:
             self.last_button = name
 
     # adds a beer to the counter for either user or computer
-    def add_beer(self, who):
+    def add_beer(self, who, amount):
         if who == 'Computer':
-            self.Computer_count.setText(str(int(self.Computer_count.text()) + 1))
+            self.Computer_count.setText(str(int(self.Computer_count.text()) + amount))
         elif  who == 'User':
-            self.User_count.setText(str(int(self.User_count.text()) + 1))
+            self.User_count.setText(str(int(self.User_count.text()) + amount))
 
     # updates the big board by revealing one card
     def update_board(self, card):
@@ -742,9 +745,19 @@ class Ui_FuckdeDealer(object):
             new_counts = list(deck.counts().values())
             self.bar_graph.setOpts(height=new_counts, width=0.8)
 
-    # highlights the best pick
-    def highlight_plot(self, deck):
-        self.highlight_bar.setOpts(height=2, width=0.8)
+    # highlights the best first pick
+    def highlight_1st(self, deck):
+        if self.enable_hints.isChecked() == True:
+            best_pick, best_counts = self.game.best_firstguess(deck)
+            best_pick = best_pick - 1
+            self.highlight_bar.setOpts(x = [best_pick], height=[best_counts], width=0.8, brush='r')
+
+    # highlights the best second picks
+    def highlight_2nd(self, deck, first_guess, picked):
+        if self.enable_hints.isChecked() == True:
+            best_picks, best_counts = self.game.best_secondguess(deck, first_guess, self.picked)
+            best_picks = best_picks - 1
+            self.highlight_bar.setOpts(x = list(best_picks), height=list(best_counts), width=0.8, brush='r')
 
     # can be used to moderate user input via an event loop
     def requesting_guess(self):
@@ -778,8 +791,14 @@ class Ui_FuckdeDealer(object):
 
         return self.last_button
 
+    # plays an entire round autonomously
+    def autoplay(self):
+        return
+
     # starts the game
     def start_game(self):
+        self.game = Game()
+        self.enable_tracking.setEnabled(True)
         self.button_Start.setEnabled(False)
         self.message_box.setText('Welcome to Fuck the Dealer!')
         QtTest.QTest.qWait(2000)
@@ -790,47 +809,64 @@ class Ui_FuckdeDealer(object):
             self.message_box.setText('A random card has been picked from the deck. \nPlease make a guess')
 
             # first round
-            first_guess = self.requesting_guess()
-            picked, result = self.game.first_round(first_guess)
-            print(picked.filename)
-            self.message_box.setText(f'Your pick was {first_guess}')
+            self.round_bool = True
+            self.first_guess = self.requesting_guess()
+            self.picked, result = self.game.first_round(self.first_guess)
+            print(self.picked.filename)
+            self.message_box.setText(f'Your pick was {self.first_guess}')
             if result == True:
                 self.message_box.append(f'Correct!')
-                self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+picked.filename))
+                self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(3000)
-                self.add_beer('Computer')
-                self.update_board(picked)
+                self.game.cards.remove(self.picked.rank, self.picked.color)
+
+                self.add_beer('Computer', 2)
+                self.update_board(self.picked)
                 self.update_plot(self.game.cards)
+                self.highlight_1st(self.game.cards)
                 continue
             else:
                 self.message_box.append(f'Incorrect, please go {result}')
+                self.highlight_2nd(self.game.cards, self.first_guess, self.picked)
 
             # second round
-            second_guess = self.requesting_guess()
-            picked, result = self.game.second_round(second_guess, picked)
-            self.message_box.append(f'Your pick was {second_guess}')
+            self.round_bool = False
+            self.second_guess = self.requesting_guess()
+            self.picked, result = self.game.second_round(self.second_guess, self.picked)
+            self.message_box.append(f'Your pick was {self.second_guess}')
             if result == True:
                 self.message_box.append(f'Correct!')
-                self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+picked.filename))
+                self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(3000)
-                self.add_beer('Computer')
-                self.update_board(picked)
+                self.game.cards.remove(self.picked.rank, self.picked.color)
+
+                self.add_beer('Computer', 1)
+                self.update_board(self.picked)
                 self.update_plot(self.game.cards)
+                self.highlight_1st(self.game.cards)
                 continue
             else:
-                self.message_box.append(f'Incorrect, the card was {picked.rank} of {picked.color}')
-                self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+picked.filename))
+                self.message_box.append(f'Incorrect, the card was {self.picked.rank} of {self.picked.color}')
+                self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(3000)
-                self.add_beer('User')
-                self.update_board(picked)
+                self.game.cards.remove(self.picked.rank, self.picked.color)
+
+                self.add_beer('User', 1)
+                self.update_board(self.picked)
                 self.update_plot(self.game.cards)
+                self.highlight_1st(self.game.cards)
                 continue
 
         winner = 'You'
         self.message_box.setText(f'Game is over!\n {winner} won the game')
+        self.message_box.append(f'Play again?')
+        self.enable_tracking.setEnabled(False)
+        self.button_Start.setText('Play again')
+        self.button_Start.setEnabled(True)
+        self.button_Start.clicked.connect(lambda: self.start_game)
 
 if __name__ == "__main__":
     import sys
