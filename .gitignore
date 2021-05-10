@@ -3,7 +3,9 @@
 launch.json
 settings.json
 *.ui
+env
 *.ipynb
+__pycache__
 output
 card_deck
 card_resizer.py

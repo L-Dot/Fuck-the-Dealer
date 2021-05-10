@@ -24,7 +24,7 @@ class Ui_FuckdeDealer(object):
         self.centralwidget = QtWidgets.QWidget(FuckdeDealer)
         self.centralwidget.setObjectName("centralwidget")
         self.fuckdedealertitle = QtWidgets.QLabel(self.centralwidget)
-        self.fuckdedealertitle.setGeometry(QtCore.QRect(30, 10, 511, 51))
+        self.fuckdedealertitle.setGeometry(QtCore.QRect(30, 10, 531, 51))
         font = QtGui.QFont()
         font.setFamily("Franklin Gothic Medium")
         font.setPointSize(30)
@@ -685,7 +685,7 @@ class Ui_FuckdeDealer(object):
     def retranslateUi(self, FuckdeDealer):
         _translate = QtCore.QCoreApplication.translate
         FuckdeDealer.setWindowTitle(_translate("FuckdeDealer", "MainWindow"))
-        self.fuckdedealertitle.setText(_translate("FuckdeDealer", "Fuck de dealer (single player)"))
+        self.fuckdedealertitle.setText(_translate("FuckdeDealer", "Fuck the dealer (single player)"))
         self.button_Start.setText(_translate("FuckdeDealer", "Start"))
         self.button_Exit.setText(_translate("FuckdeDealer", "Exit"))
         self.button_Auto.setText(_translate("FuckdeDealer", "Auto"))
