@@ -5,3 +5,4 @@ settings.json
 *.ui
 *.ipynb
 output
+card_deck
