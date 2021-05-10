@@ -13,11 +13,7 @@ While the game is originally called "fuck the dealer", and if playing with more 
 
 My time is done, but now I challenge **you** to beat the bot and to become a true _"dealer fucker"_.
 
-## Instructions
-Start the game by running `python fuckTheDealer.py` with Python 3.x. 
+## How to install
+All required packages can be installed by running `pip install -r requirements.txt`. 
 
-## Requirements
-- pyqt5
-- pyqtgraph
-- numpy
-- wquantiles
+The game can then be started by running `python fuckTheDealer.py`.
