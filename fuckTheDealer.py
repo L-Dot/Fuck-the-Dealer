@@ -57,6 +57,14 @@ class Ui_FuckdeDealer(object):
         font.setPointSize(10)
         self.button_Auto.setFont(font)
         self.button_Auto.setObjectName("button_Auto")
+        self.button_Stop = QtWidgets.QPushButton(self.centralwidget, clicked = lambda : self.pressed_it('Stop'))
+        self.button_Stop.setGeometry(670, 20, 71, 20)
+        font = QtGui.QFont()
+        font.setFamily("Franklin Gothic Medium")
+        font.setPointSize(10)
+        self.button_Stop.setFont(font)
+        self.button_Stop.setEnabled(False)
+        self.button_Stop.setObjectName("button_Stop")
         self.button_A = QtWidgets.QPushButton(self.horizontalLayoutWidget, clicked = lambda : self.pressed_it('Ace'))
         font = QtGui.QFont()
         font.setFamily("Franklin Gothic Medium")
@@ -681,6 +689,7 @@ class Ui_FuckdeDealer(object):
         self.button_Start.setText(_translate("FuckdeDealer", "Start"))
         self.button_Exit.setText(_translate("FuckdeDealer", "Exit"))
         self.button_Auto.setText(_translate("FuckdeDealer", "Auto"))
+        self.button_Stop.setText(_translate("FuckdeDealer", "Stop"))
         self.button_A.setText(_translate("FuckdeDealer", "A"))
         self.button_2.setText(_translate("FuckdeDealer", "2"))
         self.button_3.setText(_translate("FuckdeDealer", "3"))
@@ -710,6 +719,8 @@ class Ui_FuckdeDealer(object):
             self.start_game(auto=False, pausetime=2500)
         elif name == 'Auto':
             self.start_game(auto=True, pausetime=50)
+        elif name == 'Stop':
+            self.end_game()
         elif name == 'Exit':
             sys.exit()
         elif name == 'tracking':
@@ -804,7 +815,6 @@ class Ui_FuckdeDealer(object):
                     else:
                         w.setStyleSheet('QPushButton {color: black}')
 
-
     # can be used to moderate user input via an event loop
     def requesting_guess(self):
 
@@ -841,12 +851,40 @@ class Ui_FuckdeDealer(object):
 
         return self.last_button
 
+    def end_game(self):
+        if int(self.User_count.text()) > int(self.Computer_count.text()):
+            winner = 'Computer'
+        else:
+            winner = 'You'
+        widgets = (self.horizontalLayout.itemAt(i).widget() for i in range(self.horizontalLayout.count())) 
+        for w in widgets:
+            w.setEnabled(False)
+
+        self.message_box.setHtml(f'<p style="font-size: 14px">Game is over!</p>')
+        self.message_box.append(f'<p style="font-size: 14px"><b>{winner}</b> won the game.</p>')
+        self.message_box.append(f'<p style="font-size: 14px">Play again?</p>')
+        self.enable_tracking.setEnabled(False)
+        self.enable_tracking.setChecked(False)
+        self.enable_hints.setEnabled(False)
+        self.enable_hints.setChecked(False)
+        self.button_Start.setText('Play again')
+        self.button_Start.setEnabled(True)
+        self.button_Auto.setEnabled(True)
+        self.button_Stop.setEnabled(False)
+
     # starts the game
     def start_game(self, auto=False, pausetime=2500):
         self.game = Game()
+
+        if auto == False:
+            self.button_Stop.setEnabled(True)
+        elif auto == True:
+            self.button_Stop.setEnabled(False)
         self.enable_tracking.setEnabled(True)
         self.button_Start.setEnabled(False)
         self.button_Auto.setEnabled(False)
+        self.User_count.setText('0')
+        self.Computer_count.setText('0')
         self.message_box.setHtml('<p style="font-size: 14px">Welcome to Fuck the Dealer!</p>')
 
         # reset the board to all card backs
@@ -872,9 +910,9 @@ class Ui_FuckdeDealer(object):
                 self.first_guess = self.game.best_firstguess(self.game.cards)[0]
 
             self.picked, result = self.game.first_round(self.first_guess)
-            self.message_box.setHtml(f'<p style="font-size: 14px">Your pick was <b>{self.first_guess}</b></p>')
+            self.message_box.setHtml(f'<p style="font-size: 14px">Your pick was <b>{self.first_guess}</b>.</p>')
             if result == True:
-                self.message_box.append(f'<p style="font-size: 14px"><b>Correct!</b></p>')
+                self.message_box.append(f'<p style="font-size: 14px;color: green"><b>Correct!</b></p>')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(pausetime)
@@ -901,9 +939,9 @@ class Ui_FuckdeDealer(object):
                 self.second_guess = random.choice(guesslist)
 
             self.picked, result = self.game.second_round(self.second_guess, self.picked)
-            self.message_box.append(f'<p style="font-size: 14px">Your pick was <b>{self.second_guess}</b></p>')
+            self.message_box.append(f'<p style="font-size: 14px">Your pick was <b>{self.second_guess}</b>.</p>')
             if result == True:
-                self.message_box.append(f'<p style="font-size: 14px"><b>Correct!</b></p>')
+                self.message_box.append(f'<p style="font-size: 14px;color: green"><b>Correct!</b></p>')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(pausetime)
@@ -916,7 +954,7 @@ class Ui_FuckdeDealer(object):
                 continue
             else:
                 self.message_box.append(f'<p style="font-size: 14px; color: red"><b>Incorrect!</b></p>')
-                self.message_box.append(f'<p style="font-size: 14px">The card was <b>{self.picked.rank} of {self.picked.color}s</b></p>')
+                self.message_box.append(f'<p style="font-size: 14px">The card was <b>{self.picked.rank} of {self.picked.color}s</b>.</p>')
                 self.pulled_card.setPixmap(QtGui.QPixmap("medium_deck/"+self.picked.filename))
 
                 QtTest.QTest.qWait(pausetime)
@@ -928,9 +966,19 @@ class Ui_FuckdeDealer(object):
                 self.highlight_1st(self.game.cards)
                 continue
 
-        winner = 'You'
-        self.message_box.setText(f'Game is over!\n {winner} won the game')
-        self.message_box.append(f'Play again?')
+        self.end_game()
+        """
+        if int(self.User_count.text()) > int(self.Computer_count.text()):
+            winner = 'Computer'
+        else:
+            winner = 'You'
+        widgets = (self.horizontalLayout.itemAt(i).widget() for i in range(self.horizontalLayout.count())) 
+        for w in widgets:
+            w.setEnabled(False)
+
+        self.message_box.setHtml(f'<p style="font-size: 14px">Game is over!</p>')
+        self.message_box.append(f'<p style="font-size: 14px"><b>{winner}</b> won the game.</p>')
+        self.message_box.append(f'<p style="font-size: 14px">Play again?</p>')
         self.enable_tracking.setEnabled(False)
         self.enable_tracking.setChecked(False)
         self.enable_hints.setEnabled(False)
@@ -938,6 +986,7 @@ class Ui_FuckdeDealer(object):
         self.button_Start.setText('Play again')
         self.button_Start.setEnabled(True)
         self.button_Auto.setEnabled(True)
+        """
 
 def rank2int(rank):
     try: 
