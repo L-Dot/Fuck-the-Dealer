@@ -6,3 +6,4 @@ settings.json
 *.ipynb
 output
 card_deck
+card_resizer.py
